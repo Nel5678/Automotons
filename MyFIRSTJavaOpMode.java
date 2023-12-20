@@ -9,7 +9,7 @@ import com.qualcomm.robotcore.hardware.DistanceSensor;
 import com.qualcomm.robotcore.hardware.Servo;
 
 
-@TeleOp(name="Template: VELVEETA OpMode", group="Linear Opmode")
+@TeleOp(name="Template: VELVEETA OpMode", group = "Linear Opmode")
 public class MyFIRSTJavaOpMode extends LinearOpMode {
     private Gyroscope imu;
     private DcMotor[] motorTest;
