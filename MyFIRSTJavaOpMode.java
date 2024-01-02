@@ -44,6 +44,8 @@ public class MyFIRSTJavaOpMode extends LinearOpMode {
     // sets 4 drive motors for translational movement
     private void translate(double xVal, double yVal) {
         double totalPower = pythag(xVal, yVal);
+        if (totalPower > 1) totalPower = 1;
+        if (totalPower < -1) totalPower = -1;
         if (xVal == 0.0 && yVal == 0.0) {
             lfd.setPower(0.0);
             lrd.setPower(0.0);
