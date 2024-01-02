@@ -9,25 +9,16 @@ import com.qualcomm.robotcore.hardware.DistanceSensor;
 import com.qualcomm.robotcore.hardware.Servo;
 
 
-@TeleOp(name="Template: VELVEETA OpMode", group = "Linear Opmode")
+@TeleOp(name="Template: 2024MovementOpmode1", group="Linear Opmode")
 public class MyFIRSTJavaOpMode extends LinearOpMode {
-    private Gyroscope imu;
-    private DcMotor[] motorTest;
-    private DigitalChannel digitalTouch;
-    private DistanceSensor sensorColorRange;
-    private Servo servoTest;
-
-
+    private DcMotor lfd = hardwareMap.get(DcMotor.class, "leftFrontDrive");
+    private DcMotor lrd = hardwareMap.get(DcMotor.class, "leftRearDrive");
+    private DcMotor rfd = hardwareMap.get(DcMotor.class, "rightFrontDrive");
+    private DcMotor rrd = hardwareMap.get(DcMotor.class, "rightRearDrive");
+    private int lMod = -1; // changes CW to CCW for left motors
+    private int rMod = 1; // changes CW to CCW for right motors
     @Override
     public void runOpMode() {
-        //imu = hardwareMap.get(Gyroscope.class, "imu");
-        motorTest = new DcMotor[4];
-        for (int i = 0; i < 4; i++) {
-            motorTest[i] = hardwareMap.get(DcMotor.class, "motor" + i);
-        }
-        //digitalTouch = hardwareMap.get(DigitalChannel.class, "digitalTouch");
-        //sensorColorRange = hardwareMap.get(DistanceSensor.class, "sensorColorRange");
-        //servoTest = hardwareMap.get(Servo.class, "servoTest");
 
         telemetry.addData("Status", "Initialized");
         telemetry.update();
@@ -35,38 +26,54 @@ public class MyFIRSTJavaOpMode extends LinearOpMode {
         waitForStart();
 
         // run until the end of the match (driver presses STOP)
-        int modifier = 0;
-        boolean xPressed = false;
-        boolean yPressed = false;
         while (opModeIsActive()) {
-            if (this.gamepad1.x) {
-                if (!xPressed && (modifier < 10)) {
-                    modifier += 1;
-                }
-                xPressed = true;
+            double leftX = gamepad1.left_stick_x;
+            double leftY = gamepad1.left_stick_y;
+            telemetry.addData("leftX", "" + leftX);
+            telemetry.addData("leftY", "" + leftY);
+            if (leftX == 0.0 && leftY == 0.0) {
+                // rotation stuff
             } else {
-                xPressed = false;
+                translate(leftX, leftY);
             }
-            if (this.gamepad1.y) {
-                //telemetry.addData("Status", "Y");
-                if (!yPressed && modifier > -10) {
-                    modifier -= 1;
-                }
-                yPressed = true;
-            } else {
-                yPressed = false;
-            }
-            telemetry.addData("Status", "" + modifier);
-            double modifier1 = (double) modifier/10;
-            double power0 = this.gamepad1.left_stick_x;
-            motorTest[0].setPower(power0 * modifier1);
-            double power1 = this.gamepad1.left_stick_y;
-            motorTest[1].setPower(power1 * modifier1);
-            double power2 = this.gamepad1.right_stick_x;
-            motorTest[2].setPower(power2 * modifier1);
-            double power3 = this.gamepad1.right_stick_y;
-            motorTest[3].setPower(power3 * modifier1);
-            telemetry.update();
         }
     }
+    private double pythag(double num1, double num2) {
+        return Math.sqrt(Math.pow(num1, 2) + Math.pow(num2, 2));
+    }
+    private void translate(double xVal, double yVal) {
+        double totalPower = pythag(xVal, yVal);
+        if (xVal == 0.0 && yVal == 0.0) {
+            lfd.setPower(0.0);
+            lrd.setPower(0.0);
+            rfd.setPower(0.0);
+            rrd.setPower(0.0);
+        } else if (xVal >= 0.0 && yVal >= 0.0) {
+            lrd.setPower(lMod * totalPower);
+            rfd.setPower(rMod * totalPower);
+            double oppPower = yVal - xVal;
+            lfd.setPower(lMod * oppPower);
+            rrd.setPower(rMod * oppPower);
+        } else if (xVal <= 0.0 && yVal >= 0.0) {
+            lfd.setPower(lMod * totalPower);
+            rrd.setPower(rMod * totalPower);
+            double oppPower = yVal + xVal;
+            lrd.setPower(lMod * oppPower);
+            rfd.setPower(rMod * oppPower);
+        } else if (xVal <= 0.0 && yVal <= 0.0) {
+            lrd.setPower(-1 * lMod * totalPower);
+            rfd.setPower(-1 * rMod * totalPower);
+            double oppPower = yVal - xVal;
+            lfd.setPower(lMod * oppPower);
+            rrd.setPower(rMod * oppPower);
+        } else {
+            lfd.setPower(-1 * lMod * totalPower);
+            rrd.setPower(-1 * rMod * totalPower);
+            double oppPower = yVal + xVal;
+            lrd.setPower(lMod * oppPower);
+            rfd.setPower(rMod * oppPower);
+        }
+    }
+
 }
+
