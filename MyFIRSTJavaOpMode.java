@@ -41,6 +41,7 @@ public class MyFIRSTJavaOpMode extends LinearOpMode {
     private double pythag(double num1, double num2) {
         return Math.sqrt(Math.pow(num1, 2) + Math.pow(num2, 2));
     }
+    // sets 4 drive motors for translational movement
     private void translate(double xVal, double yVal) {
         double totalPower = pythag(xVal, yVal);
         if (xVal == 0.0 && yVal == 0.0) {
