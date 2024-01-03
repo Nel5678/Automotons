@@ -105,15 +105,15 @@ public class MyFIRSTJavaOpMode extends LinearOpMode {
     }
     public void rotate(double lDepth, double rDepth) {
         if (rDepth > 0) {
-            lfd.setPower(rDepth);
-            lrd.setPower(rDepth);
-            rfd.setPower(-1*rDepth);
-            rrd.setPower(-1*rDepth);
+            lfd.setPower(lMod * rDepth);
+            lrd.setPower(lMod * rDepth);
+            rfd.setPower(-1 * rMod * rDepth);
+            rrd.setPower(-1 * rMod * rDepth);
         } else if (lDepth > 0){
-            lfd.setPower(-1*lDepth);
-            lrd.setPower(-1*lDepth);
-            rfd.setPower(lDepth);
-            rrd.setPower(lDepth);
+            lfd.setPower(-1 * lMod * lDepth);
+            lrd.setPower(-1 * lMod * lDepth);
+            rfd.setPower(rMod * lDepth);
+            rrd.setPower(rMod * lDepth);
         } else {
             lfd.setPower(0.0);
             lrd.setPower(0.0);
