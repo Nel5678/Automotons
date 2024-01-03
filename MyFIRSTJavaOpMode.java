@@ -9,8 +9,8 @@ import com.qualcomm.robotcore.hardware.DistanceSensor;
 import com.qualcomm.robotcore.hardware.Servo;
 
 
-@TeleOp(name="Template: 2024TranslateLiftOpmode1", group="Linear Opmode")
-public class Zac_2023_2 extends LinearOpMode {
+@TeleOp(name="Template: 2024 LiftOnly 1", group="Linear Opmode")
+public class MyFIRSTJavaOpMode extends LinearOpMode {
     private DcMotor lfd;
     private DcMotor lrd;
     private DcMotor rfd;
@@ -19,20 +19,21 @@ public class Zac_2023_2 extends LinearOpMode {
     private DcMotor lrl;
     private DcMotor rfl;
     private DcMotor rrl;
-    private int lMod = -1; // changes CW to CCW for left motors
-    private int rMod = 1; // changes CW to CCW for right motors
+    private int lMod = -1; // changes CW to CCW for left drive motors
+    private int rMod = 1; // changes CW to CCW for right drive motors
     @Override
     public void runOpMode() {
-        lfd = hardwareMap.get(DcMotor.class, "leftFrontDrive");
+        // currently drive motors are disabled b/c we haven't been testing them yet
+        /*lfd = hardwareMap.get(DcMotor.class, "leftFrontDrive");
         lrd = hardwareMap.get(DcMotor.class, "leftRearDrive");
         rfd = hardwareMap.get(DcMotor.class, "rightFrontDrive");
-        rrd = hardwareMap.get(DcMotor.class, "rightRearDrive");
-        /*
+        rrd = hardwareMap.get(DcMotor.class, "rightRearDrive");*/
+
         lfl = hardwareMap.get(DcMotor.class, "leftFrontLift");
         lrl = hardwareMap.get(DcMotor.class, "leftRearLift");
-        rfl = hardwareMap.get(DcMotor.class, "RightFrontLift");
-        rrl = hardwareMap.get(DcMotor.class, "RightRearLift");
-        */
+        rfl = hardwareMap.get(DcMotor.class, "rightFrontLift");
+        rrl = hardwareMap.get(DcMotor.class, "rightRearLift");
+
         telemetry.addData("Status", "Initialized");
         telemetry.update();
         // Wait for the game to start (driver presses PLAY)
@@ -49,11 +50,11 @@ public class Zac_2023_2 extends LinearOpMode {
             if (leftX == 0.0 && leftY == 0.0) {
                 double rDepth = gamepad1.right_trigger;
                 double lDepth = gamepad1.left_trigger;
-                rotate(lDepth, rDepth);
+                //rotate(lDepth, rDepth);
             } else {
-                translate(leftX, leftY);
+                //translate(leftX, leftY);
             }
-            //lift(rightY);
+            lift(rightY);
             telemetry.update();
         }
 
@@ -97,11 +98,10 @@ public class Zac_2023_2 extends LinearOpMode {
         }
     }
     public void lift(double power) {
-        lfl.setPower(power);
-        lrl.setPower(power);
+        lfl.setPower(-1 * power);
+        lrl.setPower(-1 * power);
         rfl.setPower(power);
         rrl.setPower(power);
-        // TODO: multiply powers by -1 when needed
     }
     public void rotate(double lDepth, double rDepth) {
         if (rDepth > 0) {
@@ -121,5 +121,6 @@ public class Zac_2023_2 extends LinearOpMode {
             rrd.setPower(0.0);
         }
     }
+
 }
 
