@@ -23,11 +23,10 @@ public class MyFIRSTJavaOpMode extends LinearOpMode {
     private int rMod = 1; // changes CW to CCW for right drive motors
     @Override
     public void runOpMode() {
-        // currently drive motors are disabled b/c we haven't been testing them yet
-        /*lfd = hardwareMap.get(DcMotor.class, "leftFrontDrive");
+        lfd = hardwareMap.get(DcMotor.class, "leftFrontDrive");
         lrd = hardwareMap.get(DcMotor.class, "leftRearDrive");
         rfd = hardwareMap.get(DcMotor.class, "rightFrontDrive");
-        rrd = hardwareMap.get(DcMotor.class, "rightRearDrive");*/
+        rrd = hardwareMap.get(DcMotor.class, "rightRearDrive");
 
         lfl = hardwareMap.get(DcMotor.class, "leftFrontLift");
         lrl = hardwareMap.get(DcMotor.class, "leftRearLift");
@@ -50,9 +49,9 @@ public class MyFIRSTJavaOpMode extends LinearOpMode {
             if (leftX == 0.0 && leftY == 0.0) {
                 double rDepth = gamepad1.right_trigger;
                 double lDepth = gamepad1.left_trigger;
-                //rotate(lDepth, rDepth);
+                rotate(lDepth, rDepth);
             } else {
-                //translate(leftX, leftY);
+                translate(leftX, leftY);
             }
             lift(rightY);
             telemetry.update();
