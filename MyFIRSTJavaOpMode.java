@@ -8,7 +8,6 @@ import com.qualcomm.robotcore.hardware.DigitalChannel;
 import com.qualcomm.robotcore.hardware.DistanceSensor;
 import com.qualcomm.robotcore.hardware.Servo;
 
-
 @TeleOp(name="Template: 2024 Brie 1", group="Linear Opmode")
 public class MyFIRSTJavaOpMode extends LinearOpMode {
     private DcMotor lfd;
@@ -19,6 +18,17 @@ public class MyFIRSTJavaOpMode extends LinearOpMode {
     private DcMotor lrl;
     private DcMotor rfl;
     private DcMotor rrl;
+    private int lflStart;
+    private int lrlStart;
+    private int rflStart;
+    private int rrlStart;
+    private int lflDistance;
+    private int lrlDistance;
+    private int rflDistance;
+    private int rrlDistance;
+    private double maxChangePower = 0.2;
+    private int goodEnoughDistance = 100;
+    private int maxPowerDistance = 500;
     private int lMod = -1; // changes CW to CCW for left drive motors
     private int rMod = 1; // changes CW to CCW for right drive motors
     @Override
@@ -33,6 +43,16 @@ public class MyFIRSTJavaOpMode extends LinearOpMode {
         rfl = hardwareMap.get(DcMotor.class, "rightFrontLift");
         rrl = hardwareMap.get(DcMotor.class, "rightRearLift");
 
+        lflStart = lfl.getCurrentPosition();
+        lrlStart = lrl.getCurrentPosition();
+        rflStart = rfl.getCurrentPosition();
+        rrlStart = rrl.getCurrentPosition();
+
+        lflDistance = 0;
+        lrlDistance = 0;
+        rflDistance = 0;
+        rrlDistance = 0;
+
         telemetry.addData("Status", "Initialized");
         telemetry.update();
         // Wait for the game to start (driver presses PLAY)
@@ -40,6 +60,7 @@ public class MyFIRSTJavaOpMode extends LinearOpMode {
 
         // run until the end of the match (driver presses STOP)
         while (opModeIsActive()) {
+            telemetry.addData("leftRearPosition", lrd.getCurrentPosition());
             double leftX = gamepad1.left_stick_x;
             double leftY = gamepad1.left_stick_y * -1;
             double rightY = gamepad1.right_stick_y * -1;
@@ -97,10 +118,15 @@ public class MyFIRSTJavaOpMode extends LinearOpMode {
         }
     }
     public void lift(double power) {
-        lfl.setPower(-1 * power);
-        lrl.setPower(-1 * power);
-        rfl.setPower(power);
-        rrl.setPower(power);
+        double lflMod = changeFromDistance(lflDistance);
+        double lrlMod = changeFromDistance(lrlDistance);
+        double rflMod = changeFromDistance(rflDistance);
+        double rrlMod = changeFromDistance(rrlDistance);
+        
+        lfl.setPower((-1 * power) + lflMod);
+        lrl.setPower((-1 * power) + lrlMod);
+        rfl.setPower(power + rflMod);
+        rrl.setPower(power + rrlMod);
     }
     public void rotate(double lDepth, double rDepth) {
         if (rDepth > 0) {
@@ -120,6 +146,24 @@ public class MyFIRSTJavaOpMode extends LinearOpMode {
             rrd.setPower(0.0);
         }
     }
-
+    public void updateLiftDistances() {
+        lflDistance = lfl.getCurrentPosition() - lflStart;
+        lrlDistance = lrl.getCurrentPosition() - lrlStart;
+        rflDistance = rfl.getCurrentPosition() - rflStart;
+        rrlDistance = rrl.getCurrentPosition() - rrlStart;
+    }
+    public int averageLiftDistance() {
+        return (lflDistance + lrlDistance + rflDistance + rrlDistance)/4;
+    }
+    public double changeFromDistance(double distance) {
+        if (distance > maxPowerDistance)
+            return maxChangePower;
+        if (distance < (-1.0 * maxChangePower))
+            return -1.0 * maxChangePower;
+        if (Math.abs(distance) < goodEnoughDistance)
+            return 0.0;
+        return ((double) distance/maxPowerDistance) * maxChangePower;
+    }
 }
+
 
