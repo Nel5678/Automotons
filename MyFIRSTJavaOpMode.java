@@ -9,7 +9,7 @@ import com.qualcomm.robotcore.hardware.DistanceSensor;
 import com.qualcomm.robotcore.hardware.Servo;
 
 
-@TeleOp(name="Template: 2024 LiftOnly 1", group="Linear Opmode")
+@TeleOp(name="Template: 2024 Brie 1", group="Linear Opmode")
 public class MyFIRSTJavaOpMode extends LinearOpMode {
     private DcMotor lfd;
     private DcMotor lrd;
