@@ -8,12 +8,16 @@ import com.qualcomm.robotcore.hardware.DigitalChannel;
 import com.qualcomm.robotcore.hardware.DistanceSensor;
 import com.qualcomm.robotcore.hardware.Servo;
 
-@TeleOp(name="Template: 2024 Brie 1", group="Linear Opmode")
+@TeleOp(name="Template: 2024 Brie 2", group="Linear Opmode")
 public class MyFIRSTJavaOpMode extends LinearOpMode {
+    // drive stuff
     private DcMotor lfd;
     private DcMotor lrd;
     private DcMotor rfd;
     private DcMotor rrd;
+    private int lMod = -1; // changes CW to CCW for left drive motors
+    private int rMod = 1; // changes CW to CCW for right drive motors
+    // lift stuff
     private DcMotor lfl;
     private DcMotor lrl;
     private DcMotor rfl;
@@ -29,15 +33,26 @@ public class MyFIRSTJavaOpMode extends LinearOpMode {
     private double maxChangePower = 0.2;
     private int goodEnoughDistance = 100;
     private int maxPowerDistance = 500;
-    private int lMod = -1; // changes CW to CCW for left drive motors
-    private int rMod = 1; // changes CW to CCW for right drive motors
+    // plane stuff
+    private Servo planeServo;
+    private double planeStart = 0.5;
+    private double planeDiff = 0.5;
+    // claw stuff
+    private Servo lClaw;
+    private Servo rClaw;
+    private double leftOpenPos = /*(double) 1/2*/ 0.703125;
+    private double leftDiff = (double) -3/8;
+    private double rightOpenPos = /*(double) 37/128*/ 0.296875;
+    private double rightDiff = (double) 3/8;
+    // drum stuff
+
     @Override
     public void runOpMode() {
         lfd = hardwareMap.get(DcMotor.class, "leftFrontDrive");
         lrd = hardwareMap.get(DcMotor.class, "leftRearDrive");
         rfd = hardwareMap.get(DcMotor.class, "rightFrontDrive");
         rrd = hardwareMap.get(DcMotor.class, "rightRearDrive");
-
+/*
         lfl = hardwareMap.get(DcMotor.class, "leftFrontLift");
         lrl = hardwareMap.get(DcMotor.class, "leftRearLift");
         rfl = hardwareMap.get(DcMotor.class, "rightFrontLift");
@@ -53,6 +68,17 @@ public class MyFIRSTJavaOpMode extends LinearOpMode {
         rflDistance = 0;
         rrlDistance = 0;
 
+        planeServo = hardwareMap.get(Servo.class, "planeServo");
+        planeServo.setPosition(planeStart);
+
+        lClaw = hardwareMap.get(Servo.class, "leftClaw");
+        rClaw = hardwareMap.get(Servo.class, "rightClaw");
+*/
+
+        boolean leftPressed = false;
+        boolean rightPressed = false;
+        boolean leftClosed = false;
+        boolean rightClosed = false;
         telemetry.addData("Status", "Initialized");
         telemetry.update();
         // Wait for the game to start (driver presses PLAY)
@@ -74,7 +100,22 @@ public class MyFIRSTJavaOpMode extends LinearOpMode {
             } else {
                 translate(leftX, leftY);
             }
-            lift(rightY);
+            /*if (gamepad1.left_bumper && !leftPressed) {
+                leftClosed = !leftClosed;
+                leftPressed = true;
+            } else if (!gamepad1.left_bumper){
+                leftPressed = false;
+            }
+            setClaw(true, leftClosed);
+            if (gamepad1.right_bumper && !rightPressed) {
+                rightClosed = !rightClosed;
+                rightPressed = true;
+            } else if (!gamepad1.right_bumper){
+                rightPressed = false;
+            }
+            setClaw(false, rightClosed);*/
+            //lift(rightY);
+            //updateLiftDistances();
             telemetry.update();
         }
 
@@ -92,7 +133,7 @@ public class MyFIRSTJavaOpMode extends LinearOpMode {
             rfd.setPower(0.0);
             rrd.setPower(0.0);
         } else if (xVal >= 0.0 && yVal >= 0.0) {
-            lrd.setPower(lMod * totalPower);
+            lrd.setPower(lMod * totalPower * -1.0);
             rfd.setPower(rMod * totalPower);
             double oppPower = yVal - xVal;
             lfd.setPower(lMod * oppPower);
@@ -101,10 +142,10 @@ public class MyFIRSTJavaOpMode extends LinearOpMode {
             lfd.setPower(lMod * totalPower);
             rrd.setPower(rMod * totalPower);
             double oppPower = yVal + xVal;
-            lrd.setPower(lMod * oppPower);
+            lrd.setPower(lMod * oppPower * -1.0);
             rfd.setPower(rMod * oppPower);
         } else if (xVal <= 0.0 && yVal <= 0.0) {
-            lrd.setPower(-1 * lMod * totalPower);
+            lrd.setPower(-1 * lMod * totalPower * -1.0);
             rfd.setPower(-1 * rMod * totalPower);
             double oppPower = yVal - xVal;
             lfd.setPower(lMod * oppPower);
@@ -113,7 +154,7 @@ public class MyFIRSTJavaOpMode extends LinearOpMode {
             lfd.setPower(-1 * lMod * totalPower);
             rrd.setPower(-1 * rMod * totalPower);
             double oppPower = yVal + xVal;
-            lrd.setPower(lMod * oppPower);
+            lrd.setPower(lMod * oppPower * -1.0);
             rfd.setPower(rMod * oppPower);
         }
     }
@@ -122,7 +163,7 @@ public class MyFIRSTJavaOpMode extends LinearOpMode {
         double lrlMod = changeFromDistance(lrlDistance);
         double rflMod = changeFromDistance(rflDistance);
         double rrlMod = changeFromDistance(rrlDistance);
-        
+
         lfl.setPower((-1 * power) + lflMod);
         lrl.setPower((-1 * power) + lrlMod);
         rfl.setPower(power + rflMod);
@@ -131,12 +172,12 @@ public class MyFIRSTJavaOpMode extends LinearOpMode {
     public void rotate(double lDepth, double rDepth) {
         if (rDepth > 0) {
             lfd.setPower(lMod * rDepth);
-            lrd.setPower(lMod * rDepth);
+            lrd.setPower(lMod * rDepth * -1.0);
             rfd.setPower(-1 * rMod * rDepth);
             rrd.setPower(-1 * rMod * rDepth);
         } else if (lDepth > 0){
             lfd.setPower(-1 * lMod * lDepth);
-            lrd.setPower(-1 * lMod * lDepth);
+            lrd.setPower(-1 * lMod * lDepth * -1.0);
             rfd.setPower(rMod * lDepth);
             rrd.setPower(rMod * lDepth);
         } else {
@@ -164,6 +205,23 @@ public class MyFIRSTJavaOpMode extends LinearOpMode {
             return 0.0;
         return ((double) distance/maxPowerDistance) * maxChangePower;
     }
+    public void launchPlane () {
+        planeServo.setPosition(planeStart + planeDiff);
+    }
+    private void setClaw (boolean settingLeft, boolean closed) {
+        if (settingLeft) {
+            if (closed) {
+                lClaw.setPosition(leftOpenPos + leftDiff);
+
+            } else {
+                lClaw.setPosition(leftOpenPos);
+            }
+        } else {
+            if (closed) {
+                rClaw.setPosition(rightOpenPos + rightDiff);
+            } else {
+                rClaw.setPosition(rightOpenPos);
+            }
+        }
+    }
 }
-
-
