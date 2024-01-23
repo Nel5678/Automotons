@@ -3,6 +3,7 @@ import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.hardware.DcMotor;
+import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.Gyroscope;
 import com.qualcomm.robotcore.hardware.DigitalChannel;
 import com.qualcomm.robotcore.hardware.DistanceSensor;
@@ -15,8 +16,6 @@ public class MyFIRSTJavaOpMode extends LinearOpMode {
     private DcMotor lrd;
     private DcMotor rfd;
     private DcMotor rrd;
-    private int lMod = -1; // changes CW to CCW for left drive motors
-    private int rMod = 1; // changes CW to CCW for right drive motors
     // lift stuff
     private DcMotor lfl;
     private DcMotor lrl;
@@ -52,6 +51,11 @@ public class MyFIRSTJavaOpMode extends LinearOpMode {
         lrd = hardwareMap.get(DcMotor.class, "leftRearDrive");
         rfd = hardwareMap.get(DcMotor.class, "rightFrontDrive");
         rrd = hardwareMap.get(DcMotor.class, "rightRearDrive");
+        lfd.setDirection(DcMotorSimple.Direction.FORWARD);
+        lrd.setDirection(DcMotorSimple.Direction.REVERSE);
+        rfd.setDirection(DcMotorSimple.Direction.REVERSE);
+        rrd.setDirection(DcMotorSimple.Direction.FORWARD);
+
 /*
         lfl = hardwareMap.get(DcMotor.class, "leftFrontLift");
         lrl = hardwareMap.get(DcMotor.class, "leftRearLift");
@@ -87,8 +91,8 @@ public class MyFIRSTJavaOpMode extends LinearOpMode {
         // run until the end of the match (driver presses STOP)
         while (opModeIsActive()) {
             telemetry.addData("leftRearPosition", lrd.getCurrentPosition());
-            double leftX = gamepad1.left_stick_x;
-            double leftY = gamepad1.left_stick_y * -1;
+            double leftX = gamepad1.left_stick_x * 0.1;
+            double leftY = gamepad1.left_stick_y * -0.1;
             double rightY = gamepad1.right_stick_y * -1;
             telemetry.addData("leftX", "" + leftX);
             telemetry.addData("leftY", "" + leftY);
@@ -97,9 +101,15 @@ public class MyFIRSTJavaOpMode extends LinearOpMode {
                 double rDepth = gamepad1.right_trigger;
                 double lDepth = gamepad1.left_trigger;
                 rotate(lDepth, rDepth);
+                telemetry.addData("", "rotate called");
             } else {
                 translate(leftX, leftY);
+                telemetry.addData("", "translateCalled");
             }
+            telemetry.addData("lfdPower", lfd.getPower());
+            telemetry.addData("lrdPower", lrd.getPower());
+            telemetry.addData("rfdPower", rfd.getPower());
+            telemetry.addData("rrdPower", rrd.getPower());
             /*if (gamepad1.left_bumper && !leftPressed) {
                 leftClosed = !leftClosed;
                 leftPressed = true;
@@ -133,29 +143,29 @@ public class MyFIRSTJavaOpMode extends LinearOpMode {
             rfd.setPower(0.0);
             rrd.setPower(0.0);
         } else if (xVal >= 0.0 && yVal >= 0.0) {
-            lrd.setPower(lMod * totalPower * -1.0);
-            rfd.setPower(rMod * totalPower);
+            lrd.setPower(totalPower);
+            rfd.setPower(totalPower);
             double oppPower = yVal - xVal;
-            lfd.setPower(lMod * oppPower);
-            rrd.setPower(rMod * oppPower);
+            lfd.setPower(oppPower);
+            rrd.setPower(oppPower);
         } else if (xVal <= 0.0 && yVal >= 0.0) {
-            lfd.setPower(lMod * totalPower);
-            rrd.setPower(rMod * totalPower);
+            lfd.setPower(totalPower);
+            rrd.setPower(totalPower);
             double oppPower = yVal + xVal;
-            lrd.setPower(lMod * oppPower * -1.0);
-            rfd.setPower(rMod * oppPower);
+            lrd.setPower(oppPower);
+            rfd.setPower(oppPower);
         } else if (xVal <= 0.0 && yVal <= 0.0) {
-            lrd.setPower(-1 * lMod * totalPower * -1.0);
-            rfd.setPower(-1 * rMod * totalPower);
+            lrd.setPower(-1 * totalPower);
+            rfd.setPower(-1 * totalPower);
             double oppPower = yVal - xVal;
-            lfd.setPower(lMod * oppPower);
-            rrd.setPower(rMod * oppPower);
+            lfd.setPower(oppPower);
+            rrd.setPower(oppPower);
         } else {
-            lfd.setPower(-1 * lMod * totalPower);
-            rrd.setPower(-1 * rMod * totalPower);
+            lfd.setPower(-1 * totalPower);
+            rrd.setPower(-1 * totalPower);
             double oppPower = yVal + xVal;
-            lrd.setPower(lMod * oppPower * -1.0);
-            rfd.setPower(rMod * oppPower);
+            lrd.setPower(oppPower);
+            rfd.setPower(oppPower);
         }
     }
     public void lift(double power) {
@@ -171,15 +181,15 @@ public class MyFIRSTJavaOpMode extends LinearOpMode {
     }
     public void rotate(double lDepth, double rDepth) {
         if (rDepth > 0) {
-            lfd.setPower(lMod * rDepth);
-            lrd.setPower(lMod * rDepth * -1.0);
-            rfd.setPower(-1 * rMod * rDepth);
-            rrd.setPower(-1 * rMod * rDepth);
+            lfd.setPower(rDepth);
+            lrd.setPower(rDepth);
+            rfd.setPower(-1 * rDepth);
+            rrd.setPower(-1 * rDepth);
         } else if (lDepth > 0){
-            lfd.setPower(-1 * lMod * lDepth);
-            lrd.setPower(-1 * lMod * lDepth * -1.0);
-            rfd.setPower(rMod * lDepth);
-            rrd.setPower(rMod * lDepth);
+            lfd.setPower(-1 * lDepth);
+            lrd.setPower(-1 * lDepth);
+            rfd.setPower(lDepth);
+            rrd.setPower(lDepth);
         } else {
             lfd.setPower(0.0);
             lrd.setPower(0.0);
@@ -225,3 +235,4 @@ public class MyFIRSTJavaOpMode extends LinearOpMode {
         }
     }
 }
+
