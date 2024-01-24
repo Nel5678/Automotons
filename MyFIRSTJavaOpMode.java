@@ -3,36 +3,86 @@ import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.hardware.DcMotor;
+import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.Gyroscope;
 import com.qualcomm.robotcore.hardware.DigitalChannel;
 import com.qualcomm.robotcore.hardware.DistanceSensor;
 import com.qualcomm.robotcore.hardware.Servo;
 
-
-@TeleOp(name="Template: 2024 Brie 1", group="Linear Opmode")
+@TeleOp(name="Template: 2024 Brie 2", group="Linear Opmode")
 public class MyFIRSTJavaOpMode extends LinearOpMode {
+    // drive stuff
     private DcMotor lfd;
     private DcMotor lrd;
     private DcMotor rfd;
     private DcMotor rrd;
+    // lift stuff
     private DcMotor lfl;
     private DcMotor lrl;
     private DcMotor rfl;
     private DcMotor rrl;
-    private int lMod = -1; // changes CW to CCW for left drive motors
-    private int rMod = 1; // changes CW to CCW for right drive motors
+    private int lflStart;
+    private int lrlStart;
+    private int rflStart;
+    private int rrlStart;
+    private int lflDistance;
+    private int lrlDistance;
+    private int rflDistance;
+    private int rrlDistance;
+    private double maxChangePower = 0.2;
+    private int goodEnoughDistance = 100;
+    private int maxPowerDistance = 500;
+    // plane stuff
+    private Servo planeServo;
+    private double planeStart = 0.5;
+    private double planeDiff = 0.5;
+    // claw stuff
+    private Servo lClaw;
+    private Servo rClaw;
+    private double leftOpenPos = /*(double) 1/2*/ 0.703125;
+    private double leftDiff = (double) -3/8;
+    private double rightOpenPos = /*(double) 37/128*/ 0.296875;
+    private double rightDiff = (double) 3/8;
+    // drum stuff
+
     @Override
     public void runOpMode() {
         lfd = hardwareMap.get(DcMotor.class, "leftFrontDrive");
         lrd = hardwareMap.get(DcMotor.class, "leftRearDrive");
         rfd = hardwareMap.get(DcMotor.class, "rightFrontDrive");
         rrd = hardwareMap.get(DcMotor.class, "rightRearDrive");
+        lfd.setDirection(DcMotorSimple.Direction.FORWARD);
+        lrd.setDirection(DcMotorSimple.Direction.REVERSE);
+        rfd.setDirection(DcMotorSimple.Direction.REVERSE);
+        rrd.setDirection(DcMotorSimple.Direction.FORWARD);
 
+/*
         lfl = hardwareMap.get(DcMotor.class, "leftFrontLift");
         lrl = hardwareMap.get(DcMotor.class, "leftRearLift");
         rfl = hardwareMap.get(DcMotor.class, "rightFrontLift");
         rrl = hardwareMap.get(DcMotor.class, "rightRearLift");
 
+        lflStart = lfl.getCurrentPosition();
+        lrlStart = lrl.getCurrentPosition();
+        rflStart = rfl.getCurrentPosition();
+        rrlStart = rrl.getCurrentPosition();
+
+        lflDistance = 0;
+        lrlDistance = 0;
+        rflDistance = 0;
+        rrlDistance = 0;
+
+        planeServo = hardwareMap.get(Servo.class, "planeServo");
+        planeServo.setPosition(planeStart);
+
+        lClaw = hardwareMap.get(Servo.class, "leftClaw");
+        rClaw = hardwareMap.get(Servo.class, "rightClaw");
+*/
+
+        boolean leftPressed = false;
+        boolean rightPressed = false;
+        boolean leftClosed = false;
+        boolean rightClosed = false;
         telemetry.addData("Status", "Initialized");
         telemetry.update();
         // Wait for the game to start (driver presses PLAY)
@@ -40,8 +90,9 @@ public class MyFIRSTJavaOpMode extends LinearOpMode {
 
         // run until the end of the match (driver presses STOP)
         while (opModeIsActive()) {
-            double leftX = gamepad1.left_stick_x;
-            double leftY = gamepad1.left_stick_y * -1;
+            telemetry.addData("leftRearPosition", lrd.getCurrentPosition());
+            double leftX = gamepad1.left_stick_x * 0.1;
+            double leftY = gamepad1.left_stick_y * -0.1;
             double rightY = gamepad1.right_stick_y * -1;
             telemetry.addData("leftX", "" + leftX);
             telemetry.addData("leftY", "" + leftY);
@@ -50,10 +101,31 @@ public class MyFIRSTJavaOpMode extends LinearOpMode {
                 double rDepth = gamepad1.right_trigger;
                 double lDepth = gamepad1.left_trigger;
                 rotate(lDepth, rDepth);
+                telemetry.addData("", "rotate called");
             } else {
                 translate(leftX, leftY);
+                telemetry.addData("", "translateCalled");
             }
-            lift(rightY);
+            telemetry.addData("lfdPower", lfd.getPower());
+            telemetry.addData("lrdPower", lrd.getPower());
+            telemetry.addData("rfdPower", rfd.getPower());
+            telemetry.addData("rrdPower", rrd.getPower());
+            /*if (gamepad1.left_bumper && !leftPressed) {
+                leftClosed = !leftClosed;
+                leftPressed = true;
+            } else if (!gamepad1.left_bumper){
+                leftPressed = false;
+            }
+            setClaw(true, leftClosed);
+            if (gamepad1.right_bumper && !rightPressed) {
+                rightClosed = !rightClosed;
+                rightPressed = true;
+            } else if (!gamepad1.right_bumper){
+                rightPressed = false;
+            }
+            setClaw(false, rightClosed);*/
+            //lift(rightY);
+            //updateLiftDistances();
             telemetry.update();
         }
 
@@ -71,48 +143,53 @@ public class MyFIRSTJavaOpMode extends LinearOpMode {
             rfd.setPower(0.0);
             rrd.setPower(0.0);
         } else if (xVal >= 0.0 && yVal >= 0.0) {
-            lrd.setPower(lMod * totalPower);
-            rfd.setPower(rMod * totalPower);
+            lrd.setPower(totalPower);
+            rfd.setPower(totalPower);
             double oppPower = yVal - xVal;
-            lfd.setPower(lMod * oppPower);
-            rrd.setPower(rMod * oppPower);
+            lfd.setPower(oppPower);
+            rrd.setPower(oppPower);
         } else if (xVal <= 0.0 && yVal >= 0.0) {
-            lfd.setPower(lMod * totalPower);
-            rrd.setPower(rMod * totalPower);
+            lfd.setPower(totalPower);
+            rrd.setPower(totalPower);
             double oppPower = yVal + xVal;
-            lrd.setPower(lMod * oppPower);
-            rfd.setPower(rMod * oppPower);
+            lrd.setPower(oppPower);
+            rfd.setPower(oppPower);
         } else if (xVal <= 0.0 && yVal <= 0.0) {
-            lrd.setPower(-1 * lMod * totalPower);
-            rfd.setPower(-1 * rMod * totalPower);
+            lrd.setPower(-1 * totalPower);
+            rfd.setPower(-1 * totalPower);
             double oppPower = yVal - xVal;
-            lfd.setPower(lMod * oppPower);
-            rrd.setPower(rMod * oppPower);
+            lfd.setPower(oppPower);
+            rrd.setPower(oppPower);
         } else {
-            lfd.setPower(-1 * lMod * totalPower);
-            rrd.setPower(-1 * rMod * totalPower);
+            lfd.setPower(-1 * totalPower);
+            rrd.setPower(-1 * totalPower);
             double oppPower = yVal + xVal;
-            lrd.setPower(lMod * oppPower);
-            rfd.setPower(rMod * oppPower);
+            lrd.setPower(oppPower);
+            rfd.setPower(oppPower);
         }
     }
     public void lift(double power) {
-        lfl.setPower(-1 * power);
-        lrl.setPower(-1 * power);
-        rfl.setPower(power);
-        rrl.setPower(power);
+        double lflMod = changeFromDistance(lflDistance);
+        double lrlMod = changeFromDistance(lrlDistance);
+        double rflMod = changeFromDistance(rflDistance);
+        double rrlMod = changeFromDistance(rrlDistance);
+
+        lfl.setPower((-1 * power) + lflMod);
+        lrl.setPower((-1 * power) + lrlMod);
+        rfl.setPower(power + rflMod);
+        rrl.setPower(power + rrlMod);
     }
     public void rotate(double lDepth, double rDepth) {
         if (rDepth > 0) {
-            lfd.setPower(lMod * rDepth);
-            lrd.setPower(lMod * rDepth);
-            rfd.setPower(-1 * rMod * rDepth);
-            rrd.setPower(-1 * rMod * rDepth);
+            lfd.setPower(rDepth);
+            lrd.setPower(rDepth);
+            rfd.setPower(-1 * rDepth);
+            rrd.setPower(-1 * rDepth);
         } else if (lDepth > 0){
-            lfd.setPower(-1 * lMod * lDepth);
-            lrd.setPower(-1 * lMod * lDepth);
-            rfd.setPower(rMod * lDepth);
-            rrd.setPower(rMod * lDepth);
+            lfd.setPower(-1 * lDepth);
+            lrd.setPower(-1 * lDepth);
+            rfd.setPower(lDepth);
+            rrd.setPower(lDepth);
         } else {
             lfd.setPower(0.0);
             lrd.setPower(0.0);
@@ -120,6 +197,42 @@ public class MyFIRSTJavaOpMode extends LinearOpMode {
             rrd.setPower(0.0);
         }
     }
+    public void updateLiftDistances() {
+        lflDistance = lfl.getCurrentPosition() - lflStart;
+        lrlDistance = lrl.getCurrentPosition() - lrlStart;
+        rflDistance = rfl.getCurrentPosition() - rflStart;
+        rrlDistance = rrl.getCurrentPosition() - rrlStart;
+    }
+    public int averageLiftDistance() {
+        return (lflDistance + lrlDistance + rflDistance + rrlDistance)/4;
+    }
+    public double changeFromDistance(double distance) {
+        if (distance > maxPowerDistance)
+            return maxChangePower;
+        if (distance < (-1.0 * maxChangePower))
+            return -1.0 * maxChangePower;
+        if (Math.abs(distance) < goodEnoughDistance)
+            return 0.0;
+        return ((double) distance/maxPowerDistance) * maxChangePower;
+    }
+    public void launchPlane () {
+        planeServo.setPosition(planeStart + planeDiff);
+    }
+    private void setClaw (boolean settingLeft, boolean closed) {
+        if (settingLeft) {
+            if (closed) {
+                lClaw.setPosition(leftOpenPos + leftDiff);
 
+            } else {
+                lClaw.setPosition(leftOpenPos);
+            }
+        } else {
+            if (closed) {
+                rClaw.setPosition(rightOpenPos + rightDiff);
+            } else {
+                rClaw.setPosition(rightOpenPos);
+            }
+        }
+    }
 }
 
