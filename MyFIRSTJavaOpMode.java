@@ -32,10 +32,10 @@ public class MyFIRSTJavaOpMode extends LinearOpMode {
     private int lrlDistance;
     private int rflDistance;
     private int rrlDistance;
-    private double maxChangePower = 0.2;
-    private int goodEnoughDistance = 100;
-    private int maxPowerDistance = 500;
+    private double maxChangePower = 0.6;
+    private int maxPowerDistance = 50;
     private int liftTarget = 0;
+    private boolean timeUpdated = true;
     // plane stuff
     private Servo planeServo;
     private double planeStart = 0.5;
@@ -95,6 +95,8 @@ public class MyFIRSTJavaOpMode extends LinearOpMode {
 
         ElapsedTime runtime = new ElapsedTime();
         runtime.reset();
+        int lastMillisecond = (int) runtime.milliseconds();
+        timeUpdated = true;
 
         telemetry.addData("Status", "Initialized");
         telemetry.update();
@@ -135,8 +137,24 @@ public class MyFIRSTJavaOpMode extends LinearOpMode {
                 rightPressed = false;
             }
             setClaw(false, rightClosed);*/
-            lift(rightY);
+            int thisMillisecond = (int) runtime.milliseconds();
+            boolean millisecondsChanged = lastMillisecond < thisMillisecond;
+            if (millisecondsChanged) {
+                if (gamepad1.dpad_up) {
+                    liftTarget += 1;
+                } else if (gamepad1.dpad_down) {
+                    liftTarget -= 1;
+                }
+                lastMillisecond = thisMillisecond;
+            }
+            telemetry.addData("millisecondsChanged", millisecondsChanged);
+            telemetry.addData("lm", lastMillisecond);
+            telemetry.addData("tm", thisMillisecond);
+            lift();
             addLiftTelemetry();
+            telemetry.addData("Milliseconds", runtime.milliseconds());
+            telemetry.addData("Up", gamepad1.dpad_up);
+            telemetry.addData("down", gamepad1.dpad_down);
             telemetry.update();
         }
 
@@ -152,6 +170,7 @@ public class MyFIRSTJavaOpMode extends LinearOpMode {
         telemetry.addData("lrl power", lrl.getPower() + ", dist: " + lrlDistance);
         telemetry.addData("rfl power", rfl.getPower() + ", dist: " + rflDistance);
         telemetry.addData("rrl power", rrl.getPower() + ", dist: " + rrlDistance);
+        telemetry.addData("liftTarget", liftTarget);
     }
     public static double pythag(double num1, double num2) {
         return Math.sqrt(Math.pow(num1, 2) + Math.pow(num2, 2));
@@ -212,36 +231,31 @@ public class MyFIRSTJavaOpMode extends LinearOpMode {
             rrd.setPower(0.0);
         }
     }
-    public void lift(double power) {
+    public void lift() {
         updateLiftDistances();
-        double lflMod = changeFromDistance(lflDistance);
-        double lrlMod = changeFromDistance(lrlDistance);
-        double rflMod = changeFromDistance(rflDistance);
-        double rrlMod = changeFromDistance(rrlDistance);
 
-        lfl.setPower(power + lflMod);
-        lrl.setPower(power + lrlMod);
-        rfl.setPower(power + rflMod);
-        rrl.setPower(power + rrlMod);
+        updateLiftMotorPower(lfl, lflDistance);
+        updateLiftMotorPower(lrl, lrlDistance);
+        updateLiftMotorPower(rfl, rflDistance);
+        updateLiftMotorPower(rrl, rrlDistance);
     }
     public void updateLiftDistances() {
-        lflDistance = (lfl.getCurrentPosition() - lflStart) * -1;
-        lrlDistance = lrl.getCurrentPosition() - lrlStart;
-        rflDistance = rfl.getCurrentPosition() - rflStart;
-        rrlDistance = rrl.getCurrentPosition() - rrlStart;
+        lflDistance = lfl.getCurrentPosition() - lflStart;
+        lrlDistance = (lrl.getCurrentPosition() - lrlStart) * -1;
+        rflDistance = (rfl.getCurrentPosition() - rflStart) * -1;
+        rrlDistance = (rrl.getCurrentPosition() - rrlStart) * -1;
     }
     public int averageLiftDistance() {
         return (lflDistance + lrlDistance + rflDistance + rrlDistance)/4;
     }
-    public double changeFromDistance(double distance) {
-        distance -= averageLiftDistance();
-        if (distance > maxPowerDistance)
-            return maxChangePower;
-        if (distance < (-1.0 * maxPowerDistance))
-            return -1.0 * maxChangePower;
-        if (Math.abs(distance) < goodEnoughDistance)
-            return 0.0;
-        return ((double) distance/maxPowerDistance) * maxChangePower;
+    public void updateLiftMotorPower(DcMotor motor, int distance) {
+        int error = distance - liftTarget;
+        if (error > maxPowerDistance)
+            motor.setPower(maxChangePower);
+        else if (error < (-1.0 * maxPowerDistance))
+            motor.setPower(-1.0 * maxChangePower);
+        else
+            motor.setPower(((double) error/maxPowerDistance) * maxChangePower);
     }
     public void launchPlane () {
         planeServo.setPosition(planeStart + planeDiff);
